@@ -1,6 +1,6 @@
 {
   "name": "tubnew",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "TubNew - Baixe vídeos do YouTube e Reels facilmente",
   "main": "src/main.js",
   "author": "TubNew",

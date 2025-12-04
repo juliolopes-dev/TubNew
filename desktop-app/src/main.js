@@ -142,36 +142,42 @@ ipcMain.handle('download-video', async (event, { url, outputPath, format, qualit
     const isInstagram = url.includes('instagram.com');
     const isShorts = url.includes('/shorts/');
     
-    let formatArg;
+    let args;
     if (format === 'mp3') {
-      formatArg = ['-x', '--audio-format', 'mp3', '--audio-quality', '0'];
-    } else if (isInstagram || isShorts) {
-      // Instagram e YouTube Shorts: forçar download com vídeo+áudio
-      formatArg = ['-f', 'bestvideo*+bestaudio/best'];
-    } else if (quality === 'best') {
-      formatArg = ['-f', 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/bestvideo+bestaudio/best[ext=mp4]/best'];
-    } else if (quality === '1080') {
-      formatArg = ['-f', 'bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=1080]+bestaudio/best[height<=1080][ext=mp4]/best'];
-    } else if (quality === '720') {
-      formatArg = ['-f', 'bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=720]+bestaudio/best[height<=720][ext=mp4]/best'];
-    } else if (quality === '480') {
-      formatArg = ['-f', 'bestvideo[height<=480][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=480]+bestaudio/best[height<=480][ext=mp4]/best'];
+      args = [
+        '-x', '--audio-format', 'mp3', '--audio-quality', '0',
+        '--ffmpeg-location', ffmpegPath,
+        '-o', path.join(outputPath, '%(title)s.%(ext)s'),
+        '--no-playlist',
+        '--newline',
+        '--progress',
+        url
+      ];
     } else {
-      formatArg = ['-f', 'bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/bestvideo[height<=360]+bestaudio/best[height<=360][ext=mp4]/best'];
+      // Baixar formato já combinado (single file) quando possível
+      let formatStr;
+      if (quality === 'best') {
+        formatStr = 'best[ext=mp4]/best';
+      } else if (quality === '1080') {
+        formatStr = 'best[height<=1080][ext=mp4]/best[height<=1080]';
+      } else if (quality === '720') {
+        formatStr = 'best[height<=720][ext=mp4]/best[height<=720]';
+      } else if (quality === '480') {
+        formatStr = 'best[height<=480][ext=mp4]/best[height<=480]';
+      } else {
+        formatStr = 'best[height<=360][ext=mp4]/best[height<=360]';
+      }
+      
+      args = [
+        '-f', formatStr,
+        '--ffmpeg-location', ffmpegPath,
+        '-o', path.join(outputPath, '%(title)s.%(ext)s'),
+        '--no-playlist',
+        '--newline',
+        '--progress',
+        url
+      ];
     }
-
-    const args = [
-      ...formatArg,
-      '--ffmpeg-location', ffmpegPath,
-      '--merge-output-format', 'mp4',
-      '--recode-video', 'mp4',
-      '--postprocessor-args', '-c:v libx264 -c:a aac -strict experimental',
-      '-o', path.join(outputPath, '%(title)s.%(ext)s'),
-      '--no-playlist',
-      '--newline',
-      '--progress',
-      url
-    ];
 
     const downloadProcess = spawn(ytDlpPath, args);
     let lastProgress = 0;
